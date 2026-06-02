@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapPieceDao">
+
+    <resultMap type="com.durian.manage.system.domain.SoapPiece" id="SoapPieceMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="ownerUserId" column="owner_user_id" jdbcType="BIGINT"/>
+        <result property="productionId" column="production_id" jdbcType="INTEGER"/>
+        <result property="pieceName" column="piece_name" jdbcType="VARCHAR"/>
+        <result property="pieceBatchNumber" column="piece_batch_number" jdbcType="VARCHAR"/>
+        <result property="weight" column="weight" jdbcType="NUMERIC"/>
+        <result property="price" column="price" jdbcType="NUMERIC"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="notes" column="notes" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, owner_user_id, production_id, piece_name, piece_batch_number, weight, price, status, notes, created, modified
+    </sql>
+
+    <!-- 多租户过滤：super_admin 看全部；普通用户只看自己 -->
+    <sql id="Owner_Filter">
+        <if test="superAdmin == false">
+            and owner_user_id = #{currentUserId}
+        </if>
+    </sql>
+
+    <select id="queryById" resultMap="SoapPieceMap">
+        select <include refid="Base_Column_List"/>
+        from soap_piece where id = #{id}
+    </select>
+
+    <select id="queryByProductionId" resultMap="SoapPieceMap">
+        select <include refid="Base_Column_List"/>
+        from soap_piece where production_id = #{productionId}
+        order by id asc
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_piece(owner_user_id, production_id, piece_name, piece_batch_number,
+                               weight, price, status, notes, created, modified)
+        values (#{ownerUserId}, #{productionId}, #{pieceName}, #{pieceBatchNumber},
+                #{weight}, #{price}, #{status}, #{notes}, now(), now())
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_piece(owner_user_id, production_id, piece_name, piece_batch_number,
+                               weight, price, status, notes, created, modified)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ownerUserId}, #{entity.productionId}, #{entity.pieceName}, #{entity.pieceBatchNumber},
+             #{entity.weight}, #{entity.price}, #{entity.status}, #{entity.notes}, now(), now())
+        </foreach>
+    </insert>
+
+    <update id="update">
+        update soap_piece
+        <set>
+            <if test="pieceName != null">piece_name = #{pieceName},</if>
+            <if test="pieceBatchNumber != null">piece_batch_number = #{pieceBatchNumber},</if>
+            <if test="weight != null">weight = #{weight},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="notes != null">notes = #{notes},</if>
+            modified = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from soap_piece where id = #{id}
+    </delete>
+
+    <delete id="deleteByProductionId">
+        delete from soap_piece where production_id = #{productionId}
+    </delete>
+
+    <select id="queryAll" resultMap="SoapPieceMap">
+        select <include refid="Base_Column_List"/>
+        from soap_piece
+        <where>
+            <include refid="Owner_Filter"/>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="queryByStatus" resultMap="SoapPieceMap">
+        select <include refid="Base_Column_List"/>
+        from soap_piece
+        <where>
+            status = #{status}
+            <include refid="Owner_Filter"/>
+        </where>
+        order by id desc
+    </select>
+
+</mapper>

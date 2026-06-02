@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapConsumablesUsageDao">
+
+    <resultMap type="com.durian.manage.system.domain.SoapConsumablesUsage" id="SoapConsumablesUsageMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="soapId" column="soap_id" jdbcType="INTEGER"/>
+        <result property="consumableId" column="consumable_id" jdbcType="INTEGER"/>
+        <result property="quantityUsed" column="quantity_used" jdbcType="NUMERIC"/>
+        <result property="unitPrice" column="unit_price" jdbcType="NUMERIC"/>
+        <result property="unit" column="unit" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="queryById" resultMap="SoapConsumablesUsageMap">
+        select id, soap_id, consumable_id, quantity_used, unit_price, unit, created
+        from soap_consumables_usage where id = #{id}
+    </select>
+
+    <select id="queryAllByLimit" resultMap="SoapConsumablesUsageMap">
+        select id, soap_id, consumable_id, quantity_used, unit_price, unit, created
+        from soap_consumables_usage
+        <where>
+            <if test="soapId != null">and soap_id = #{soapId}</if>
+            <if test="consumableId != null">and consumable_id = #{consumableId}</if>
+        </where>
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        select count(1) from soap_consumables_usage
+        <where>
+            <if test="soapId != null">and soap_id = #{soapId}</if>
+            <if test="consumableId != null">and consumable_id = #{consumableId}</if>
+        </where>
+    </select>
+
+    <select id="queryBySoapId" resultMap="SoapConsumablesUsageMap">
+        select id, soap_id, consumable_id, quantity_used, unit_price, unit, created
+        from soap_consumables_usage where soap_id = #{soapId}
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_consumables_usage(soap_id, consumable_id, quantity_used, unit_price, unit, created)
+        values (#{soapId}, #{consumableId}, #{quantityUsed}, #{unitPrice}, #{unit}, now())
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_consumables_usage(soap_id, consumable_id, quantity_used, unit_price, unit, created)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.soapId}, #{entity.consumableId}, #{entity.quantityUsed}, #{entity.unitPrice}, #{entity.unit}, now())
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_consumables_usage(soap_id, consumable_id, quantity_used, unit_price, unit, created)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.soapId}, #{entity.consumableId}, #{entity.quantityUsed}, #{entity.unitPrice}, #{entity.unit}, now())
+        </foreach>
+        on duplicate key update
+        quantity_used = values(quantity_used),
+        unit_price = values(unit_price),
+        unit = values(unit)
+    </insert>
+
+    <update id="update">
+        update soap_consumables_usage
+        <set>
+            <if test="soapId != null">soap_id = #{soapId},</if>
+            <if test="consumableId != null">consumable_id = #{consumableId},</if>
+            <if test="quantityUsed != null">quantity_used = #{quantityUsed},</if>
+            <if test="unitPrice != null">unit_price = #{unitPrice},</if>
+            <if test="unit != null">unit = #{unit},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from soap_consumables_usage where id = #{id}
+    </delete>
+
+    <delete id="deleteBySoapId">
+        delete from soap_consumables_usage where soap_id = #{soapId}
+    </delete>
+
+    <!-- JOIN 查询：物料使用记录（含物料名称、品牌、生产批次等信息） -->
+    <resultMap type="com.durian.manage.system.domain.SoapConsumablesUsage" id="SoapConsumablesUsageDetailMap" extends="SoapConsumablesUsageMap">
+        <result property="consumableName" column="consumable_name" jdbcType="VARCHAR"/>
+        <result property="consumableBrand" column="consumable_brand" jdbcType="VARCHAR"/>
+        <result property="productionName" column="production_name" jdbcType="VARCHAR"/>
+        <result property="productionBatchNumber" column="production_batch_number" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryAllWithDetail" resultMap="SoapConsumablesUsageDetailMap">
+        select u.id, u.soap_id, u.consumable_id, u.quantity_used, u.unit_price, u.unit, u.created,
+               c.name as consumable_name, c.brand as consumable_brand,
+               p.name as production_name, p.batch_number as production_batch_number
+        from soap_consumables_usage u
+        left join soap_consumables c on u.consumable_id = c.id
+        left join soap_production p on u.soap_id = p.id
+        <where>
+            <if test="superAdmin == false">
+                and p.owner_user_id = #{currentUserId}
+            </if>
+        </where>
+        order by u.id desc
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <select id="countWithDetail" resultType="java.lang.Long">
+        select count(1)
+        from soap_consumables_usage u
+        left join soap_production p on u.soap_id = p.id
+        <where>
+            <if test="superAdmin == false">
+                and p.owner_user_id = #{currentUserId}
+            </if>
+        </where>
+    </select>
+
+    <!-- 按 soapId 查询消耗明细（含物料名称） -->
+    <select id="queryBySoapIdWithDetail" resultMap="SoapConsumablesUsageDetailMap">
+        select u.id, u.soap_id, u.consumable_id, u.quantity_used, u.unit_price, u.unit, u.created,
+               c.name as consumable_name, c.brand as consumable_brand
+        from soap_consumables_usage u
+        left join soap_consumables c on u.consumable_id = c.id
+        where u.soap_id = #{soapId}
+    </select>
+
+</mapper>

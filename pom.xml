@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- spring boot parent -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.1.6.RELEASE</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com.durian</groupId>
+    <artifactId>com-durian-manage-system</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <modules>
+        <module>com-durian-manage-system-common</module>
+        <module>com-durian-manage-system-service</module>
+        <module>com-durian-manage-system-web</module>
+        <module>com-durian-manage-system-dao</module>
+        <module>com-durian-manage-system-domain</module>
+    </modules>
+    <packaging>pom</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <druid-starter-version>1.1.17</druid-starter-version>
+        <pagehelper.version>4.1.6</pagehelper.version>
+        <mysql-connector>8.0.16</mysql-connector>
+        <servlet-api>3.1.0</servlet-api>
+        <pagehelper-starter>1.2.7</pagehelper-starter>
+        <mybatis-starter>2.2.0</mybatis-starter>
+        <junit-version>4.12</junit-version>
+        <lombok-version>1.18.2</lombok-version>
+        <mockito-version>1.9.5</mockito-version>
+        <fastjson.version>1.2.83</fastjson.version>
+        <druid-starter-version>1.1.17</druid-starter-version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- springboot统一管理-->
+                <!-- 使用springboot两种方式: -->
+                <!-- 1)继承父类spring-boot-starter-parent,但是由于maven单继承,再想继承别的module就不可能了-->
+                <!-- 2)使用spring-boot-dependencies,在dependencyManagement中使用scope为import的方式,这种方式解决了多继承,同样也让父类中的dependency是分类,不会那么乱-->
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>2.1.6.RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>${druid-starter-version}</version>
+            </dependency>
+            <!-- 所有项目统一fastjson版本，注意此处对其他项目的影响 -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.6</version>
+            </dependency>
+
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.17</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>2.15.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>2.15.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.21</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>1.9.3</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>19.0</version>
+            </dependency>
+            <dependency>
+                <artifactId>logback-classic</artifactId>
+                <groupId>ch.qos.logback</groupId>
+                <version>1.2.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
+</project>
+

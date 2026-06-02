@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+
+	<contextName>linner-project</contextName>
+
+	<!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径 -->
+
+	<springProperty scope="context" name="FILE_MIN_INDEX" source="log.file.minindex"/>
+	<springProperty scope="context" name="FILE_MAX_INDEX" source="log.file.maxindex"/>
+	<springProperty scope="context" name="MAX_FILE_SIZE" source="log.file.maxfilesize"/>
+	<springProperty scope="context" name="LOG_HOME" source="log.file.logpath"/>
+
+    <!-- 打印颜色 -->
+    <!--<property name="LOG_PATTERN" value="%white(%d{yyyy-MM-dd HH:mm:ss.SSS}) %highlight(%lsn) %green([%thread]) %X{req.id} %highlight(%-5level) %green(%class) %boldRed([%method])-%green([%line]) - %cyan(%msg%n)"/>-->
+	<property name="LOG_PATTERN" value="[%-5p %d{yyyy-MM-dd HH:mm:ss.SSS}][%X{logid}] [%X{PFTID}] [%thread] [%class] [%method] -%m%n"/>
+    <!-- 控制台输出 -->
+	<appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+			<pattern>${LOG_PATTERN}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="LOGGER-APP" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_HOME}/durian/app.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<fileNamePattern>${LOG_HOME}/durian/app-%i.log</fileNamePattern>
+			<minIndex>${FILE_MINI_NDEX}</minIndex>
+			<maxIndex>${FILE_MAX_INDEX}</maxIndex>
+		</rollingPolicy>
+		<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+		</triggeringPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%p] [%C{0}:%L,%M\(\)] [%X{logid}] [%X{PFTID}] [%thread] [%class] [%method] -%m%n</pattern>
+		</encoder>
+	</appender>
+
+
+	<root level="INFO">
+		<appender-ref ref="LOGGER-APP" />
+		<appender-ref ref="CONSOLE" />
+	</root>
+</configuration>

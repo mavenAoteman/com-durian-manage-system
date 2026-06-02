@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapPackagePieceDao">
+    <resultMap type="com.durian.manage.system.domain.SoapPackagePiece" id="Map">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="packageId" column="package_id" jdbcType="INTEGER"/>
+        <result property="pieceId" column="piece_id" jdbcType="INTEGER"/>
+        <result property="pieceName" column="piece_name" jdbcType="VARCHAR"/>
+        <result property="pieceBatchNumber" column="piece_batch_number" jdbcType="VARCHAR"/>
+        <result property="pieceWeight" column="piece_weight" jdbcType="NUMERIC"/>
+        <result property="piecePrice" column="piece_price" jdbcType="NUMERIC"/>
+        <result property="pieceStatus" column="piece_status" jdbcType="INTEGER"/>
+        <result property="productionName" column="production_name" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryByPackageId" resultMap="Map">
+        select pp.id, pp.package_id, pp.piece_id,
+               sp.piece_name, sp.piece_batch_number, sp.weight as piece_weight,
+               sp.price as piece_price, sp.status as piece_status,
+               spr.name as production_name
+        from soap_package_piece pp
+        left join soap_piece sp on pp.piece_id = sp.id
+        left join soap_production spr on sp.production_id = spr.id
+        where pp.package_id = #{packageId}
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_package_piece(package_id, piece_id) values(#{packageId}, #{pieceId})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_package_piece(package_id, piece_id) values
+        <foreach collection="entities" item="e" separator=",">(#{e.packageId}, #{e.pieceId})</foreach>
+    </insert>
+
+    <delete id="deleteByPackageId">
+        delete from soap_package_piece where package_id=#{packageId}
+    </delete>
+
+    <delete id="deleteByPackageIdAndPieceIds">
+        delete from soap_package_piece
+        where package_id = #{packageId}
+        and piece_id in
+        <foreach collection="pieceIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
+    </delete>
+
+    <select id="queryReferencedPieceIds" resultType="java.lang.Integer">
+        select distinct piece_id from soap_package_piece
+        where piece_id in
+        <foreach collection="pieceIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
+    </select>
+</mapper>

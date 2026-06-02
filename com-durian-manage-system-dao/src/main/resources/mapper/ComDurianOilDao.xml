@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.ComDurianOilDao">
+
+    <resultMap type="com.durian.manage.system.domain.ComDurianOil" id="ComDurianOilMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="ownerUserId" column="owner_user_id" jdbcType="BIGINT"/>
+        <result property="oilChineseName" column="oil_chinese_name" jdbcType="VARCHAR"/>
+        <result property="oilEnglishName" column="oil_english_name" jdbcType="VARCHAR"/>
+        <result property="sodiumHydroxideSaponificationValue" column="sodium_hydroxide_saponification_value" jdbcType="NUMERIC"/>
+        <result property="potassiumHydroxideSaponificationValue" column="potassium_hydroxide_saponification_value" jdbcType="NUMERIC"/>
+        <result property="insValue" column="ins_value" jdbcType="NUMERIC"/>
+        <result property="creator" column="creator" jdbcType="VARCHAR"/>
+        <result property="modifier" column="modifier" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="modifyTime" column="modify_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, owner_user_id, oil_chinese_name, oil_english_name,
+        sodium_hydroxide_saponification_value, potassium_hydroxide_saponification_value,
+        ins_value, creator, modifier, status, create_time, modify_time
+    </sql>
+
+    <!-- 多租户过滤：
+         - super_admin 看全部；
+         - 普通用户看 "归属于超级管理员的（公共油脂）" + "自己创建的" -->
+    <sql id="Owner_Filter">
+        <if test="superAdmin == false">
+            and (owner_user_id in (select id from `user` where role = 1)
+                 or owner_user_id = #{currentUserId})
+        </if>
+    </sql>
+
+    <select id="queryById" resultMap="ComDurianOilMap">
+        select <include refid="Base_Column_List"/> from oil where id = #{id}
+    </select>
+
+    <select id="queryAllByLimit" resultMap="ComDurianOilMap">
+        select <include refid="Base_Column_List"/>
+        from oil
+        <where>
+            <if test="comDurianOil.oilChineseName != null and comDurianOil.oilChineseName != ''">
+                and oil_chinese_name LIKE CONCAT('%', #{comDurianOil.oilChineseName}, '%')
+            </if>
+            <include refid="Owner_Filter"/>
+        </where>
+        order by owner_user_id asc, id desc
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        select count(1)
+        from oil
+        <where>
+            <if test="comDurianOil.oilChineseName != null and comDurianOil.oilChineseName != ''">
+                and oil_chinese_name LIKE CONCAT('%', #{comDurianOil.oilChineseName}, '%')
+            </if>
+            <include refid="Owner_Filter"/>
+        </where>
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into oil(owner_user_id, oil_chinese_name, oil_english_name,
+                        sodium_hydroxide_saponification_value, potassium_hydroxide_saponification_value,
+                        ins_value, creator, modifier, status, create_time, modify_time)
+        values (#{ownerUserId},
+                #{oilChineseName}, #{oilEnglishName},
+                #{sodiumHydroxideSaponificationValue}, #{potassiumHydroxideSaponificationValue},
+                #{insValue}, #{creator}, #{modifier}, #{status}, #{createTime}, #{modifyTime})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into oil(owner_user_id, oil_chinese_name, oil_english_name,
+                        sodium_hydroxide_saponification_value, potassium_hydroxide_saponification_value,
+                        ins_value, creator, modifier, status, create_time, modify_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ownerUserId},
+             #{entity.oilChineseName}, #{entity.oilEnglishName},
+             #{entity.sodiumHydroxideSaponificationValue}, #{entity.potassiumHydroxideSaponificationValue},
+             #{entity.insValue}, #{entity.creator}, #{entity.modifier}, #{entity.status},
+             #{entity.createTime}, #{entity.modifyTime})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into oil(owner_user_id, oil_chinese_name, oil_english_name,
+                        sodium_hydroxide_saponification_value, potassium_hydroxide_saponification_value,
+                        ins_value, creator, modifier, status, create_time, modify_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.ownerUserId},
+             #{entity.oilChineseName}, #{entity.oilEnglishName},
+             #{entity.sodiumHydroxideSaponificationValue}, #{entity.potassiumHydroxideSaponificationValue},
+             #{entity.insValue}, #{entity.creator}, #{entity.modifier}, #{entity.status},
+             #{entity.createTime}, #{entity.modifyTime})
+        </foreach>
+        on duplicate key update
+        oil_chinese_name = values(oil_chinese_name),
+        oil_english_name = values(oil_english_name),
+        sodium_hydroxide_saponification_value = values(sodium_hydroxide_saponification_value),
+        potassium_hydroxide_saponification_value = values(potassium_hydroxide_saponification_value),
+        ins_value = values(ins_value),
+        modifier = values(modifier),
+        modify_time = values(modify_time)
+    </insert>
+
+    <update id="update">
+        update oil
+        <set>
+            <if test="oilChineseName != null and oilChineseName != ''">
+                oil_chinese_name = #{oilChineseName},
+            </if>
+            <if test="oilEnglishName != null and oilEnglishName != ''">
+                oil_english_name = #{oilEnglishName},
+            </if>
+            <if test="sodiumHydroxideSaponificationValue != null">
+                sodium_hydroxide_saponification_value = #{sodiumHydroxideSaponificationValue},
+            </if>
+            <if test="potassiumHydroxideSaponificationValue != null">
+                potassium_hydroxide_saponification_value = #{potassiumHydroxideSaponificationValue},
+            </if>
+            <if test="insValue != null">
+                ins_value = #{insValue},
+            </if>
+            <if test="modifier != null and modifier != ''">
+                modifier = #{modifier},
+            </if>
+            <if test="status != null and status != ''">
+                status = #{status},
+            </if>
+            modify_time = now(),
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from oil where id = #{id}
+    </delete>
+
+    <select id="queryAll" resultMap="ComDurianOilMap">
+        select <include refid="Base_Column_List"/>
+        from oil
+        <where>
+            <include refid="Owner_Filter"/>
+        </where>
+        order by owner_user_id asc, oil_chinese_name
+    </select>
+
+</mapper>

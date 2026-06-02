@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapPackageDao">
+    <resultMap type="com.durian.manage.system.domain.SoapPackage" id="SoapPackageMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="ownerUserId" column="owner_user_id" jdbcType="BIGINT"/>
+        <result property="batchNumber" column="batch_number" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="totalMaterialCost" column="total_material_cost" jdbcType="NUMERIC"/>
+        <result property="notes" column="notes" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="cols">id, owner_user_id, batch_number, status, total_material_cost, notes, created, modified</sql>
+
+    <!-- 多租户过滤 -->
+    <sql id="Owner_Filter">
+        <if test="superAdmin == false">
+            and owner_user_id = #{currentUserId}
+        </if>
+    </sql>
+
+    <select id="queryById" resultMap="SoapPackageMap">
+        select <include refid="cols"/> from soap_package where id=#{id}
+    </select>
+
+    <select id="queryAll" resultMap="SoapPackageMap">
+        select <include refid="cols"/> from soap_package
+        <where>
+            status = 3
+            <include refid="Owner_Filter"/>
+        </where>
+        order by id desc
+    </select>
+
+    <select id="queryAllByLimit" resultMap="SoapPackageMap">
+        select <include refid="cols"/> from soap_package
+        <where>
+            <if test="pkg.batchNumber != null and pkg.batchNumber != ''">and batch_number=#{pkg.batchNumber}</if>
+            <if test="pkg.status != null">and status=#{pkg.status}</if>
+            <include refid="Owner_Filter"/>
+        </where>
+        order by id desc limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        select count(1) from soap_package
+        <where>
+            <if test="pkg.batchNumber != null and pkg.batchNumber != ''">and batch_number=#{pkg.batchNumber}</if>
+            <if test="pkg.status != null">and status=#{pkg.status}</if>
+            <include refid="Owner_Filter"/>
+        </where>
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_package(owner_user_id, batch_number, status, total_material_cost, notes, created, modified)
+        values(#{ownerUserId}, #{batchNumber}, #{status}, #{totalMaterialCost}, #{notes}, now(), now())
+    </insert>
+
+    <update id="update">
+        update soap_package set
+        <if test="status != null">status=#{status},</if>
+        <if test="totalMaterialCost != null">total_material_cost=#{totalMaterialCost},</if>
+        <if test="notes != null">notes=#{notes},</if>
+        modified=now() where id=#{id}
+    </update>
+
+    <update id="updateStatus">
+        update soap_package set status=#{status}, modified=now() where id=#{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from soap_package where id=#{id}
+    </delete>
+</mapper>

@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapConsumablesDao">
+
+    <resultMap type="com.durian.manage.system.domain.SoapConsumables" id="SoapConsumablesMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="ownerUserId" column="owner_user_id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="brand" column="brand" jdbcType="VARCHAR"/>
+        <result property="quantity" column="quantity" jdbcType="NUMERIC"/>
+        <result property="weightInGrams" column="weight_in_grams" jdbcType="NUMERIC"/>
+        <result property="unitPrice" column="unit_price" jdbcType="NUMERIC"/>
+        <result property="totalPrice" column="total_price" jdbcType="NUMERIC"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="unit" column="unit" jdbcType="VARCHAR"/>
+        <result property="consumableType" column="consumable_type" jdbcType="INTEGER"/>
+        <result property="expiryDate" column="expiry_date" jdbcType="TIMESTAMP"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
+        <result property="updatedBy" column="updated_by" jdbcType="VARCHAR"/>
+        <result property="purchaseChannel" column="purchase_channel" jdbcType="VARCHAR"/>
+        <result property="purchaseTime" column="purchase_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, owner_user_id, name, brand, quantity, weight_in_grams, unit_price, total_price,
+        status, unit, consumable_type, expiry_date, created, modified, created_by, updated_by,
+        purchase_channel, purchase_time
+    </sql>
+
+    <!-- 多租户过滤：super_admin 看全部；普通用户只看自己的 -->
+    <sql id="Owner_Filter">
+        <if test="superAdmin == false">
+            and owner_user_id = #{currentUserId}
+        </if>
+    </sql>
+
+    <!--查询单个-->
+    <select id="queryById" resultMap="SoapConsumablesMap">
+        select <include refid="Base_Column_List"/>
+        from soap_consumables
+        where id = #{id}
+    </select>
+
+    <!--查询指定行数据-->
+    <select id="queryAllByLimit" resultMap="SoapConsumablesMap">
+        select <include refid="Base_Column_List"/>
+        from soap_consumables
+        <where>
+            <if test="soapConsumables.name != null and soapConsumables.name != ''">
+                and name LIKE CONCAT('%', #{soapConsumables.name}, '%')
+            </if>
+            <if test="soapConsumables.brand != null and soapConsumables.brand != ''">
+                and brand LIKE CONCAT('%', #{soapConsumables.brand}, '%')
+            </if>
+            <if test="soapConsumables.consumableType != null">
+                and consumable_type = #{soapConsumables.consumableType}
+            </if>
+            <if test="soapConsumables.purchaseChannel != null and soapConsumables.purchaseChannel != ''">
+                and purchase_channel LIKE CONCAT('%', #{soapConsumables.purchaseChannel}, '%')
+            </if>
+            <if test="soapConsumables.purchaseTime != null">
+                and purchase_time &gt;= #{soapConsumables.purchaseTime}
+            </if>
+            <if test="soapConsumables.expiryDate != null">
+                and purchase_time &lt;= #{soapConsumables.expiryDate}
+            </if>
+            <if test="soapConsumables.status != null">
+                and status = #{soapConsumables.status}
+            </if>
+            <include refid="Owner_Filter"/>
+        </where>
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <!--统计总行数-->
+    <select id="count" resultType="java.lang.Long">
+        select count(1)
+        from soap_consumables
+        <where>
+            <if test="soapConsumables.name != null and soapConsumables.name != ''">
+                and name LIKE CONCAT('%', #{soapConsumables.name}, '%')
+            </if>
+            <if test="soapConsumables.brand != null and soapConsumables.brand != ''">
+                and brand LIKE CONCAT('%', #{soapConsumables.brand}, '%')
+            </if>
+            <if test="soapConsumables.consumableType != null">
+                and consumable_type = #{soapConsumables.consumableType}
+            </if>
+            <if test="soapConsumables.purchaseChannel != null and soapConsumables.purchaseChannel != ''">
+                and purchase_channel LIKE CONCAT('%', #{soapConsumables.purchaseChannel}, '%')
+            </if>
+            <if test="purchaseTimeStart != null">
+                and purchase_time &gt;= #{purchaseTimeStart}
+            </if>
+            <if test="purchaseTimeEnd != null">
+                and purchase_time &lt;= #{purchaseTimeEnd}
+            </if>
+            <if test="soapConsumables.status != null">
+                and status = #{soapConsumables.status}
+            </if>
+            <include refid="Owner_Filter"/>
+        </where>
+    </select>
+
+    <!--新增所有列-->
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_consumables(owner_user_id, name, brand, quantity, weight_in_grams, unit_price, total_price,
+                                     status, unit, consumable_type, expiry_date, created, modified,
+                                     created_by, updated_by, purchase_channel, purchase_time)
+        values (#{ownerUserId}, #{name}, #{brand}, #{quantity}, #{weightInGrams}, #{unitPrice}, #{totalPrice},
+                #{status}, #{unit}, #{consumableType}, #{expiryDate}, #{created}, #{modified},
+                #{createdBy}, #{updatedBy}, #{purchaseChannel}, #{purchaseTime})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_consumables(name, brand, quantity, weight_in_grams, unit_price, total_price, status, unit, consumable_type, expiry_date, created, modified, created_by, updated_by, purchase_channel, purchase_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.name}, #{entity.brand}, #{entity.quantity}, #{entity.weightInGrams}, #{entity.unitPrice}, #{entity.totalPrice}, #{entity.status}, #{entity.unit}, #{entity.consumableType}, #{entity.expiryDate}, #{entity.created}, #{entity.modified}, #{entity.createdBy}, #{entity.updatedBy}, #{entity.purchaseChannel}, #{entity.purchaseTime})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_consumables(name, brand, quantity, weight_in_grams, unit_price, total_price, status, unit, consumable_type, expiry_date, created, modified, created_by, updated_by, purchase_channel, purchase_time)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+            (#{entity.name}, #{entity.brand}, #{entity.quantity}, #{entity.weightInGrams}, #{entity.unitPrice}, #{entity.totalPrice}, #{entity.status}, #{entity.unit}, #{entity.consumableType}, #{entity.expiryDate}, #{entity.created}, #{entity.modified}, #{entity.createdBy}, #{entity.updatedBy}, #{entity.purchaseChannel}, #{entity.purchaseTime})
+        </foreach>
+        on duplicate key update
+        name = values(name),
+        brand = values(brand),
+        quantity = values(quantity),
+        weight_in_grams = values(weight_in_grams),
+        unit_price = values(unit_price),
+        total_price = values(total_price),
+        status = values(status),
+        unit = values(unit),
+        consumable_type = values(consumable_type),
+        expiry_date = values(expiry_date),
+        created = values(created),
+        modified = values(modified),
+        created_by = values(created_by),
+        updated_by = values(updated_by),
+        purchase_channel = values(purchase_channel),
+        purchase_time = values(purchase_time)
+    </insert>
+
+    <!--通过主键修改数据-->
+    <update id="update">
+        update soap_consumables
+        <set>
+            <if test="name != null and name != ''">
+                name = #{name},
+            </if>
+            <if test="brand != null and brand != ''">
+                brand = #{brand},
+            </if>
+            <if test="quantity != null">
+                quantity = #{quantity},
+            weight_in_grams = #{weightInGrams},
+            </if>
+            <if test="unit != null">
+                unit = #{unit},
+            </if>
+            <if test="consumableType != null">
+                consumable_type = #{consumableType},
+            </if>
+            <if test="unitPrice != null">
+                unit_price = #{unitPrice},
+            </if>
+            <if test="totalPrice != null">
+                total_price = #{totalPrice},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="expiryDate != null">
+                expiry_date = #{expiryDate},
+            </if>
+            <if test="created != null">
+                created = #{created},
+            </if>
+            <if test="modified != null">
+                modified = #{modified},
+            </if>
+            <if test="createdBy != null and createdBy != ''">
+                created_by = #{createdBy},
+            </if>
+            <if test="updatedBy != null and updatedBy != ''">
+                updated_by = #{updatedBy},
+            </if>
+            <if test="purchaseChannel != null and purchaseChannel != ''">
+                purchase_channel = #{purchaseChannel},
+            </if>
+            <if test="purchaseTime != null">
+                purchase_time = #{purchaseTime},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--通过主键删除-->
+    <update id="deleteById">
+        update soap_consumables set status = 0 where id = #{id}
+    </update>
+
+    <!--查询所有可用物料-->
+    <select id="queryAvailable" resultMap="SoapConsumablesMap">
+        select <include refid="Base_Column_List"/>
+        from soap_consumables
+        <where>
+            status = 1
+            <include refid="Owner_Filter"/>
+        </where>
+        order by consumable_type, name
+    </select>
+
+    <!--扣减物料库存，库存不足时标记为已用完-->
+    <update id="deductQuantity">
+        update soap_consumables
+        set quantity = quantity - #{quantity},
+            weight_in_grams = case when weight_in_grams is not null then weight_in_grams - (#{quantity} * (weight_in_grams / quantity)) else null end,
+            status = case when quantity - #{quantity} &lt;= 0 then 2 else 1 end,
+            modified = now()
+        where id = #{id} and status = 1 and quantity >= #{quantity}
+    </update>
+
+    <!--恢复物料库存（撤销打包扣减），同时把状态从"已用完"恢复为"可用"-->
+    <update id="addQuantity">
+        update soap_consumables
+        set quantity = quantity + #{quantity},
+            status = 1,
+            modified = now()
+        where id = #{id}
+    </update>
+
+</mapper>

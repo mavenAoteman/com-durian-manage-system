@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.UserDao">
+
+    <resultMap type="com.durian.manage.system.domain.User" id="UserMap">
+        <result property="id" column="id" jdbcType="BIGINT"/>
+        <result property="username" column="username" jdbcType="VARCHAR"/>
+        <result property="password" column="password" jdbcType="VARCHAR"/>
+        <result property="email" column="email" jdbcType="VARCHAR"/>
+        <result property="workshopName" column="workshop_name" jdbcType="VARCHAR"/>
+        <result property="bio" column="bio" jdbcType="VARCHAR"/>
+        <result property="role" column="role" jdbcType="INTEGER"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="failedLoginCount" column="failed_login_count" jdbcType="INTEGER"/>
+        <result property="lockedUntil" column="locked_until" jdbcType="TIMESTAMP"/>
+        <result property="lastLoginAt" column="last_login_at" jdbcType="TIMESTAMP"/>
+        <result property="lastLoginIp" column="last_login_ip" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, username, password, email, workshop_name, bio, role, status,
+        failed_login_count, locked_until, last_login_at, last_login_ip,
+        created, modified
+    </sql>
+
+    <select id="queryById" resultMap="UserMap">
+        select <include refid="Base_Column_List"/> from `user` where id = #{id}
+    </select>
+
+    <select id="queryByUsername" resultMap="UserMap">
+        select <include refid="Base_Column_List"/> from `user` where username = #{username}
+    </select>
+
+    <select id="queryByEmail" resultMap="UserMap">
+        select <include refid="Base_Column_List"/> from `user` where email = #{email}
+    </select>
+
+    <select id="queryByLoginIdentifier" resultMap="UserMap">
+        select <include refid="Base_Column_List"/>
+        from `user`
+        where username = #{identifier} or email = #{identifier}
+        limit 1
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into `user`
+            (username, password, email, workshop_name, bio, role, status,
+             failed_login_count, created, modified)
+        values
+            (#{username}, #{password}, #{email},
+             #{workshopName}, #{bio}, #{role}, #{status},
+             0, now(), now())
+    </insert>
+
+    <update id="updateProfile">
+        update `user`
+        set workshop_name = #{workshopName},
+            bio = #{bio},
+            modified = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateLoginSuccess">
+        update `user`
+        set failed_login_count = 0,
+            locked_until = null,
+            last_login_at = #{lastLoginAt},
+            last_login_ip = #{lastLoginIp},
+            modified = now()
+        where id = #{id}
+    </update>
+
+    <update id="updateLoginFailure">
+        update `user`
+        set failed_login_count = #{failedLoginCount},
+            locked_until = #{lockedUntil},
+            modified = now()
+        where id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        update `user`
+        set password = #{password},
+            modified = now()
+        where id = #{id}
+    </update>
+
+</mapper>

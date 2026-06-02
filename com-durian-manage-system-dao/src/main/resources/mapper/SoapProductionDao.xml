@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapProductionDao">
+
+    <resultMap type="com.durian.manage.system.domain.SoapProduction" id="SoapProductionMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="ownerUserId" column="owner_user_id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="batchNumber" column="batch_number" jdbcType="VARCHAR"/>
+        <result property="productionDate" column="production_date" jdbcType="TIMESTAMP"/>
+        <result property="status" column="status" jdbcType="INTEGER"/>
+        <result property="totalCost" column="total_cost" jdbcType="NUMERIC"/>
+        <result property="totalWeight" column="total_weight" jdbcType="NUMERIC"/>
+        <result property="cutWeight" column="cut_weight" jdbcType="NUMERIC"/>
+        <result property="actualWeight" column="actual_weight" jdbcType="NUMERIC"/>
+        <result property="maturationDate" column="maturation_date" jdbcType="TIMESTAMP"/>
+        <result property="actualMaturationDate" column="actual_maturation_date" jdbcType="TIMESTAMP"/>
+        <result property="notes" column="notes" jdbcType="VARCHAR"/>
+        <result property="created" column="created" jdbcType="TIMESTAMP"/>
+        <result property="modified" column="modified" jdbcType="TIMESTAMP"/>
+        <result property="createdBy" column="created_by" jdbcType="VARCHAR"/>
+        <result property="updatedBy" column="updated_by" jdbcType="VARCHAR"/>
+        <result property="totalPiecePrice" column="total_piece_price" jdbcType="NUMERIC"/>
+    </resultMap>
+
+    <sql id="Production_Cols">
+        p.id, p.owner_user_id, p.name, p.batch_number, p.production_date, p.status, p.total_cost,
+        p.total_weight, p.cut_weight, p.actual_weight, p.maturation_date, p.actual_maturation_date, p.notes,
+        p.created, p.modified, p.created_by, p.updated_by,
+        coalesce((select sum(price) from soap_piece where production_id = p.id), 0) as total_piece_price
+    </sql>
+
+    <!-- 多租户过滤：super_admin 看全部；普通用户只看自己 -->
+    <sql id="Owner_Filter">
+        <if test="superAdmin == false">
+            and p.owner_user_id = #{currentUserId}
+        </if>
+    </sql>
+
+    <select id="queryById" resultMap="SoapProductionMap">
+        select <include refid="Production_Cols"/>
+        from soap_production p where p.id = #{id}
+    </select>
+
+    <select id="queryAllByLimit" resultMap="SoapProductionMap">
+        select <include refid="Production_Cols"/>
+        from soap_production p
+        <where>
+            <if test="soapProduction.name != null and soapProduction.name != ''">
+                and p.name LIKE CONCAT('%', #{soapProduction.name}, '%')
+            </if>
+            <if test="soapProduction.batchNumber != null and soapProduction.batchNumber != ''">
+                and p.batch_number = #{soapProduction.batchNumber}
+            </if>
+            <if test="soapProduction.status != null">
+                and p.status = #{soapProduction.status}
+            </if>
+            <include refid="Owner_Filter"/>
+        </where>
+        order by p.id desc
+        limit #{pageable.offset}, #{pageable.pageSize}
+    </select>
+
+    <select id="queryAll" resultMap="SoapProductionMap">
+        select <include refid="Production_Cols"/>
+        from soap_production p
+        <where>
+            <include refid="Owner_Filter"/>
+        </where>
+        order by p.id desc
+    </select>
+
+    <select id="count" resultType="java.lang.Long">
+        select count(1) from soap_production p
+        <where>
+            <if test="soapProduction.name != null and soapProduction.name != ''">
+                and p.name LIKE CONCAT('%', #{soapProduction.name}, '%')
+            </if>
+            <if test="soapProduction.batchNumber != null and soapProduction.batchNumber != ''">
+                and p.batch_number = #{soapProduction.batchNumber}
+            </if>
+            <if test="soapProduction.status != null">
+                and p.status = #{soapProduction.status}
+            </if>
+            <include refid="Owner_Filter"/>
+        </where>
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_production(owner_user_id, name, batch_number, production_date, status, total_cost,
+               total_weight, cut_weight, actual_weight, maturation_date, actual_maturation_date, notes,
+               created, modified, created_by, updated_by)
+        values (#{ownerUserId}, #{name}, #{batchNumber}, #{productionDate}, #{status}, #{totalCost},
+                #{totalWeight}, #{cutWeight}, #{actualWeight}, #{maturationDate}, #{actualMaturationDate}, #{notes},
+                now(), now(), #{createdBy}, #{updatedBy})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_production(name, batch_number, production_date, status, total_cost,
+               total_weight, cut_weight, actual_weight, maturation_date, actual_maturation_date, notes,
+               created, modified, created_by, updated_by)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.name}, #{entity.batchNumber}, #{entity.productionDate}, #{entity.status}, #{entity.totalCost},
+         #{entity.totalWeight}, #{entity.cutWeight}, #{entity.actualWeight}, #{entity.maturationDate}, #{entity.actualMaturationDate}, #{entity.notes},
+         now(), now(), #{entity.createdBy}, #{entity.updatedBy})
+        </foreach>
+    </insert>
+
+    <insert id="insertOrUpdateBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_production(name, batch_number, production_date, status, total_cost,
+               total_weight, cut_weight, actual_weight, maturation_date, actual_maturation_date, notes,
+               created, modified, created_by, updated_by)
+        values
+        <foreach collection="entities" item="entity" separator=",">
+        (#{entity.name}, #{entity.batchNumber}, #{entity.productionDate}, #{entity.status}, #{entity.totalCost},
+         #{entity.totalWeight}, #{entity.cutWeight}, #{entity.actualWeight}, #{entity.maturationDate}, #{entity.actualMaturationDate}, #{entity.notes},
+         now(), now(), #{entity.createdBy}, #{entity.updatedBy})
+        </foreach>
+        on duplicate key update
+        name = values(name),
+        batch_number = values(batch_number),
+        production_date = values(production_date),
+        status = values(status),
+        total_cost = values(total_cost),
+        total_weight = values(total_weight),
+        cut_weight = values(cut_weight),
+        actual_weight = values(actual_weight),
+        maturation_date = values(maturation_date),
+        actual_maturation_date = values(actual_maturation_date),
+        notes = values(notes),
+        modified = now(),
+        updated_by = values(updated_by)
+    </insert>
+
+    <update id="update">
+        update soap_production
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="batchNumber != null and batchNumber != ''">batch_number = #{batchNumber},</if>
+            <if test="productionDate != null">production_date = #{productionDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="totalCost != null">total_cost = #{totalCost},</if>
+            <if test="totalWeight != null">total_weight = #{totalWeight},</if>
+            <if test="cutWeight != null">cut_weight = #{cutWeight},</if>
+            <if test="actualWeight != null">actual_weight = #{actualWeight},</if>
+            <if test="maturationDate != null">maturation_date = #{maturationDate},</if>
+            <if test="actualMaturationDate != null">actual_maturation_date = #{actualMaturationDate},</if>
+            <if test="notes != null">notes = #{notes},</if>
+            <if test="updatedBy != null and updatedBy != ''">updated_by = #{updatedBy},</if>
+            modified = now()
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        update soap_production set status = #{status}, modified = now()
+        <if test="cutWeight != null">, cut_weight = #{cutWeight}</if>
+        <if test="actualWeight != null">, actual_weight = #{actualWeight}</if>
+        <if test="actualMaturationDate != null">, actual_maturation_date = #{actualMaturationDate}</if>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from soap_production where id = #{id}
+    </delete>
+
+</mapper>

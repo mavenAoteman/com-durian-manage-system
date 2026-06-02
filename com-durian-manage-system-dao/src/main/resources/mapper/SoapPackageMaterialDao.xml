@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.durian.manage.system.dao.SoapPackageMaterialDao">
+    <resultMap type="com.durian.manage.system.domain.SoapPackageMaterial" id="Map">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="packageId" column="package_id" jdbcType="INTEGER"/>
+        <result property="consumableId" column="consumable_id" jdbcType="INTEGER"/>
+        <result property="materialType" column="material_type" jdbcType="VARCHAR"/>
+        <result property="quantityUsed" column="quantity_used" jdbcType="NUMERIC"/>
+        <result property="unitPrice" column="unit_price" jdbcType="NUMERIC"/>
+        <result property="unit" column="unit" jdbcType="VARCHAR"/>
+        <result property="consumableName" column="consumable_name" jdbcType="VARCHAR"/>
+        <result property="consumableBrand" column="consumable_brand" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="queryByPackageId" resultMap="Map">
+        select pm.*, c.name as consumable_name, c.brand as consumable_brand
+        from soap_package_material pm
+        left join soap_consumables c on pm.consumable_id = c.id
+        where pm.package_id = #{packageId}
+    </select>
+
+    <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_package_material(package_id, consumable_id, material_type, quantity_used, unit_price, unit)
+        values(#{packageId}, #{consumableId}, #{materialType}, #{quantityUsed}, #{unitPrice}, #{unit})
+    </insert>
+
+    <insert id="insertBatch" keyProperty="id" useGeneratedKeys="true">
+        insert into soap_package_material(package_id, consumable_id, material_type, quantity_used, unit_price, unit) values
+        <foreach collection="entities" item="e" separator=",">
+        (#{e.packageId}, #{e.consumableId}, #{e.materialType}, #{e.quantityUsed}, #{e.unitPrice}, #{e.unit})
+        </foreach>
+    </insert>
+
+    <delete id="deleteByPackageId">
+        delete from soap_package_material where package_id=#{packageId}
+    </delete>
+</mapper>
